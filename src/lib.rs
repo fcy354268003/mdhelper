@@ -22,13 +22,14 @@ pub mod tests;
 const PATH_CACHE: &str = "C:\\Users\\樊晨阳1\\AppData\\Roaming\\Typora\\typora-user-images\\";
 const DRAWING_BED_POSITION: &str = "https://gitee.com/fcy111/my-data/raw/master/";
 
-pub fn begin_task(task: TaskUnit) {
+pub fn begin_task(task: &TaskUnit) {
+    // let (send, rec) = mpsc::channel();
     let handle = thread::spawn({
         || {
-            change_file(task);
+            push_picture_cache();
         }
     });
-    push_picture_cache();
+    change_file(&task);
     handle.join().unwrap();
 }
 
@@ -82,21 +83,21 @@ pub fn parse_parameter() -> TaskUnit {
     return task;
 }
 
-pub fn change_file(task: TaskUnit) {
-    println!("{:?}", task);
-    let source_file = File::open(task.source_path).unwrap();
+pub fn change_file(task: &TaskUnit) {
+    let source_file = File::open(&task.source_path).unwrap();
     let buff_reader = BufReader::new(source_file);
-    let new_file = File::create(task.target_path).unwrap();
+    let new_file = File::create(&task.target_path).unwrap();
     let mut buff_writer = BufWriter::new(new_file);
     for line in buff_reader.lines() {
         let con = line.unwrap();
-        let new_con: String;
+        let mut new_con: String;
         new_con = if con.contains(PATH_CACHE) {
             con.replace(PATH_CACHE, &String::from(DRAWING_BED_POSITION))
         } else {
             con
         };
-        buff_writer.write_all(new_con.as_bytes()).unwrap();
+        new_con.insert_str(new_con.len(), "\n");
+        buff_writer.write(new_con.as_bytes()).unwrap();
     }
     buff_writer.flush().unwrap();
 }
